@@ -126,7 +126,7 @@ def drawGaussian(img, pt, score, sigma=1):
     img += tmp_img
 
 def inference(scene_idx):
-    for anno_idx in range(256):
+    for anno_idx in range(3):
 
         rgb_file = os.path.join(dataset_root, 'scenes/scene_{:04d}/{}/rgb/{:04d}.png'.format(scene_idx, camera, anno_idx))
         depth_file = os.path.join(dataset_root, 'scenes/scene_{:04d}/{}/depth/{:04d}.png'.format(scene_idx, camera, anno_idx))
@@ -134,10 +134,10 @@ def inference(scene_idx):
         meta_file = os.path.join(dataset_root, 'scenes/scene_{:04d}/{}/meta/{:04d}.mat'.format(scene_idx, camera, anno_idx))
 
         depth = cv2.imread(depth_file, cv2.IMREAD_UNCHANGED).astype(np.float32) / 1000.0
-        seg_mask = cv2.imread(segmask_file, cv2.IMREAD_UNCHANGED).astype(np.bool)
+        seg_mask = cv2.imread(segmask_file, cv2.IMREAD_UNCHANGED).astype(bool)
         # idx0, idx1 = np.nonzero(seg_mask)
         # seg_mask[idx0, idx1] = 1
-        # seg_mask = seg_mask.astype(np.bool)
+        # seg_mask = seg_mask.astype(bool)
         meta = scio.loadmat(meta_file)
         intrinsics = meta['intrinsic_matrix']
         fx, fy = intrinsics[0,0], intrinsics[1,1]

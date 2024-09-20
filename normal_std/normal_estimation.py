@@ -83,7 +83,7 @@ if __name__ == "__main__":
     camera_info = CameraInfo(width, height, fx, fy, cx, cy, s)
 
     depth = cv2.imread(depth_file, cv2.IMREAD_UNCHANGED).astype(np.float32) / 1000.0
-    seg_mask = cv2.imread(segmask_file, cv2.IMREAD_UNCHANGED).astype(np.bool)
+    seg_mask = cv2.imread(segmask_file, cv2.IMREAD_UNCHANGED).astype(bool)
     # heatmap = np.ones_like(depth, dtype=np.float32)
     print('depth:', depth.max())
 

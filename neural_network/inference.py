@@ -337,7 +337,7 @@ def inference_one_view(rgb_file, depth_file, meta_file, scene_idx, anno_idx):
 
 def inference(scene_idx):
     
-    for anno_idx in range(256):
+    for anno_idx in range(3):
 
         rgb_file = os.path.join(dataset_root, 'scenes/scene_{:04d}/{}/rgb/{:04d}.png'.format(scene_idx, camera, anno_idx))
         depth_file = os.path.join(dataset_root, 'scenes/scene_{:04d}/{}/depth/{:04d}.png'.format(scene_idx, camera, anno_idx))
