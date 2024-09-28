@@ -1,1 +1,3 @@
-from .util import CameraInfo, uniform_kernel, grid_sample, create_point_cloud_from_depth_image, visualize_heatmap, visualize_suctions, filter_suctions
+from .util import CameraInfo, SuctionNetUtils
+from .network_inference import SuctionNetInferencer
+from .norm_inference import NormStdInferencer

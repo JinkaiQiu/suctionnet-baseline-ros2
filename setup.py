@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'suctionnet = suctionnet_ros2.suctionnet:main'
+            'suctionnet = suctionnet_ros2.suctionnet:main',
+            'suctionnet_client = suctionnet_ros2.suctionnet_client:main'
         ],
     },
 )

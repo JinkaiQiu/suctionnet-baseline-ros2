@@ -9,7 +9,8 @@ from PIL import Image
 import scipy.io as scio
 import sys
 from normal_std.inference import estimate_suction
-from util import CameraInfo, uniform_kernel, grid_sample, visualize_heatmap, visualize_suctions, filter_suctions
+from .util import CameraInfo
+from .util import SuctionNetUtils as SNU
 
 class NormStdInferencer:
     def __init__(self):
@@ -25,7 +26,7 @@ class NormStdInferencer:
 
         # Visualize heatmap
         k_size = 15
-        kernel = uniform_kernel(k_size)
+        kernel = SNU.uniform_kernel(k_size)
         kernel = torch.from_numpy(kernel).unsqueeze(0).unsqueeze(0)
         # print('kernel:', kernel.shape)
         heatmap = np.pad(heatmap, k_size//2)
@@ -33,15 +34,22 @@ class NormStdInferencer:
         # print('heatmap:', heatmap.shape)
         heatmap = F.conv2d(heatmap, kernel).squeeze().numpy()
 
-        suction_scores, idx0, idx1 = grid_sample(heatmap, down_rate=10, topk=10)
+        suction_scores, idx0, idx1 = SNU.grid_sample(heatmap, down_rate=10, topk=10)
         
         if seg_mask is not None:
-            suctions, idx0, idx1 = filter_suctions(suction_scores, idx0, idx1, seg_mask)
+            suctions, idx0, idx1 = SNU.filter_suctions(suction_scores, idx0, idx1, seg_mask)
 
         suction_directions = normals[idx0, idx1, :]
         suction_translations = point_cloud[idx0, idx1, :]
-        visualize_heatmap(heatmap, rgb_img, idx0, idx1)
-        visualize_suctions(suction_directions, suction_translations)
+        # visualize_heatmap(heatmap, rgb_img, idx0, idx1)
+        # visualize_suctions(suction_directions, suction_translations)
+        
+        # average suction direction and translation after filtering outliers
+        suction_direction = np.mean(SNU.remove_outliers(suction_directions, 1), axis=0)
+        suction_translation = np.mean(SNU.remove_outliers(suction_translations, 1), axis=0)
+        suction_quat = SNU.unit_vect_to_quat(suction_direction)
+
+        return suction_quat, suction_translation 
 
 if __name__ == "__main__":
     inferencer = NormStdInferencer()

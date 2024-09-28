@@ -6,7 +6,8 @@ import numpy as np
 import open3d as o3d
 import torch.nn as nn
 from neural_network import get_suction_from_heatmap
-from util import CameraInfo, uniform_kernel, grid_sample, visualize_heatmap, visualize_suctions, filter_suctions
+from .util import CameraInfo
+from .util import SuctionNetUtils as SNU
 
 class SuctionNetInferencer:
     def __init__(self, ckpt_path):
@@ -35,7 +36,7 @@ class SuctionNetInferencer:
         heatmap = (pred[0, 0] * pred[0, 1]).cpu().unsqueeze(0).unsqueeze(0)
 
         k_size = 15
-        kernel = uniform_kernel(k_size)
+        kernel = SNU.uniform_kernel(k_size)
         kernel = torch.from_numpy(kernel).unsqueeze(0).unsqueeze(0)
         heatmap = F.conv2d(heatmap, kernel, padding=(kernel.shape[2] // 2, kernel.shape[3] // 2)).squeeze().numpy()
 
@@ -43,7 +44,7 @@ class SuctionNetInferencer:
         print("suction shape before filtering: ", suctions.shape)
 
         if seg_mask is not None:
-            suctions, idx0, idx1 = filter_suctions(suctions, idx0, idx1, seg_mask)
+            suctions, idx0, idx1 = SNU.filter_suctions(suctions, idx0, idx1, seg_mask)
         
         print("suction shape after filtering: ", suctions.shape)
 
@@ -51,7 +52,7 @@ class SuctionNetInferencer:
         suction_normals = suctions[:, 1:4]
         suction_points = suctions[:, 4:7]
 
-        visualize_heatmap(heatmap, rgb_img*255, idx0, idx1)
+        SNU.visualize_heatmap(heatmap, rgb_img*255, idx0, idx1)
         # visualize_suctions(suction_normals, suction_points)
 
 if __name__ == "__main__":
