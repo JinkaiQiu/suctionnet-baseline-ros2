@@ -5,7 +5,9 @@ from geometry_msgs.msg import Pose
 from cv_bridge import CvBridge
 import cv2
 import numpy as np
-
+from geometry_msgs.msg import TransformStamped, PoseStamped
+import tf2_ros
+import tf2_geometry_msgs
 # Assume the service type is suc_pose_interface.srv.SucPose
 from perception_interfaces.srv import Sucpose
 
@@ -20,13 +22,13 @@ class SucPoseClient(Node):
 
     def send_request(self):
         # Load images from local directory
-        depth_dir = "/home/jinkai/Downloads/data/depth_image/first_scene/frame0000.jpg"
-        rgb_dir = "/home/jinkai/Downloads/data/color_image/first_scene/frame0000.jpg"
-        seg_dir = "/home/jinkai/Downloads/data/seg_masks/first_scene.png"
+        depth_dir = "/home/jinkai/Downloads/Test_Images/Depth/image_50.png"
+        rgb_dir = "/home/jinkai/Downloads/Test_Images/RGB/image_50.png"
+        seg_dir = "/home/jinkai/Downloads/Test_Images/seg_mask/image_50.png"
 
         # Read images using OpenCV
         color_image_cv = cv2.imread(rgb_dir, cv2.IMREAD_COLOR)
-        depth_image_cv = cv2.imread(depth_dir, cv2.IMREAD_GRAYSCALE).astype(np.float32) / 1000.0
+        depth_image_cv = cv2.imread(depth_dir, cv2.IMREAD_GRAYSCALE).astype(np.float32) / 256 * 1000.0
         segmask_cv = cv2.imread(seg_dir, cv2.IMREAD_GRAYSCALE).astype(bool)
         segmask_cv = segmask_cv.astype(np.uint8) * 255
 
@@ -55,9 +57,34 @@ class SucPoseClient(Node):
 
         rclpy.spin_until_future_complete(self, self.future)
         if self.future.result() is not None:
-            self.get_logger().info(f'Received response: {self.future.result()}')
+            result = self.future.result().pose
+            self.get_logger().info(f'Pose: {result}')
+            self.process_pose(result)
+            
         else:
             self.get_logger().error('Exception while calling service: %r' % self.future.exception())
+    
+    def process_pose(self, pose):
+        # Create a TransformStamped message for camera to base transformation
+        transform = TransformStamped()
+        transform.header.stamp = self.get_clock().now().to_msg()
+        transform.header.frame_id = 'base_frame'
+        transform.child_frame_id = 'camera_frame'
+        transform.transform.translation.x = 0.167
+        transform.transform.translation.y = 0.053
+        transform.transform.translation.z = 1.112
+        transform.transform.rotation.x = 0.536
+        transform.transform.rotation.y = -0.519
+        transform.transform.rotation.z = 0.465
+        transform.transform.rotation.w = -0.478
+
+        # Transform the pose from camera frame to base frame
+        tf_buffer = tf2_ros.Buffer()
+        tf_listener = tf2_ros.TransformListener(tf_buffer, self)
+        transformed_pose = tf2_geometry_msgs.do_transform_pose(pose, transform)
+
+        # Log the transformed pose
+        self.get_logger().info(f'Transformed Pose in Base Frame: {transformed_pose}')
 
 def main(args=None):
     rclpy.init(args=args)

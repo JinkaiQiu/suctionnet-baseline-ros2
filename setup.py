@@ -21,7 +21,8 @@ setup(
     entry_points={
         'console_scripts': [
             'suctionnet = suctionnet_ros2.suctionnet:main',
-            'suctionnet_client = suctionnet_ros2.suctionnet_client:main'
+            'suctionnet_client = suctionnet_ros2.suctionnet_client:main',
+            'dummy_segment = suctionnet_ros2.dummy_seg_mask:main'
         ],
     },
 )

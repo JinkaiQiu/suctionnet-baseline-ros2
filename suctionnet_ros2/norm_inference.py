@@ -41,23 +41,31 @@ class NormStdInferencer:
 
         suction_directions = normals[idx0, idx1, :]
         suction_translations = point_cloud[idx0, idx1, :]
-        # visualize_heatmap(heatmap, rgb_img, idx0, idx1)
-        # visualize_suctions(suction_directions, suction_translations)
+        SNU.visualize_heatmap(heatmap, rgb_img, idx0, idx1)
+        SNU.visualize_suctions(suction_directions, suction_translations)
         
         # average suction direction and translation after filtering outliers
-        suction_direction = np.mean(SNU.remove_outliers(suction_directions, 1), axis=0)
-        suction_translation = np.mean(SNU.remove_outliers(suction_translations, 1), axis=0)
+        suction_direction = np.mean(suction_directions, axis=0)
+        suction_direction = suction_direction / np.linalg.norm(suction_direction)
+        suction_translation = np.mean(suction_translations, axis=0)
         suction_quat = SNU.unit_vect_to_quat(suction_direction)
-
+        
+        print('suction_quat:', suction_quat)
+        print('suction_translation:', suction_translation)
+        print('suction_direction:', suction_direction)
         return suction_quat, suction_translation 
 
 if __name__ == "__main__":
     inferencer = NormStdInferencer()
-    depth_dir = "/home/jinkai/Downloads/data/depth_image/first_scene/frame0000.jpg"
-    rgb_dir = "/home/jinkai/Downloads/data/color_image/first_scene/frame0000.jpg"
+    # depth_dir = "/home/jinkai/Downloads/data/depth_image/first_scene/frame0000.jpg"
+    # rgb_dir = "/home/jinkai/Downloads/data/color_image/first_scene/frame0000.jpg"
     seg_dir = "/home/jinkai/Downloads/data/seg_masks/first_scene.png"
+    depth_dir = "/home/jinkai/Downloads/Test_Images/Depth/image_50.png"
+    rgb_dir = "/home/jinkai/Downloads/Test_Images/RGB/image_50.png"
+    seg_dir = "/home/jinkai/Downloads/Test_Images/seg_mask/image_50.png"
     rgb_img = cv2.imread(rgb_dir)
-    depth_img = cv2.imread(depth_dir, cv2.IMREAD_GRAYSCALE).astype(np.float32) / 1000.0
+    depth_img = cv2.imread(depth_dir, cv2.IMREAD_GRAYSCALE).astype(np.float32)/100
+    dummy_seg_mask = np.ones_like(depth_img, dtype=bool)
     seg_mask = cv2.imread(seg_dir, cv2.IMREAD_GRAYSCALE).astype(bool)
     
     inferencer.infer(rgb_img, depth_img, seg_mask)
