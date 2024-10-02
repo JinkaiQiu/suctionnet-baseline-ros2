@@ -20,8 +20,10 @@ class SuctionNetNode(Node):
         depth = request.depth_image
         seg_mask = request.segmask
         rgb_img = self.bridge.imgmsg_to_cv2(rgb, "rgb8")
-        depth_img = self.bridge.imgmsg_to_cv2(depth, "32FC1")
         seg_mask = self.bridge.imgmsg_to_cv2(seg_mask, "mono8")
+        depth_img = self.bridge.imgmsg_to_cv2(depth,"passthrough")
+        depth_img = depth_img.astype(np.float32)
+        depth_img /= 1000
 
         quat_values, trans_values = self.norm_inferencer.infer(rgb_img, depth_img, seg_mask)
 
