@@ -7,6 +7,8 @@ import numpy as np
 from cv_bridge import CvBridge
 import rclpy
 from geometry_msgs.msg import Pose, Quaternion, Point
+import tf2_ros
+from geometry_msgs.msg import TransformStamped
 
 class SuctionNetNode(Node):
     def __init__(self):
@@ -14,6 +16,7 @@ class SuctionNetNode(Node):
         self.norm_inferencer = NormStdInferencer()
         self.bridge = CvBridge()
         self.create_service(Sucpose, "sucpose_service", self.suctionnet_callback)
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
     
     def suctionnet_callback(self, request, response):
         rgb = request.color_image
@@ -43,6 +46,19 @@ class SuctionNetNode(Node):
         res.position = trans
  
         response.pose = res
+
+        # Publish the transform
+        t = TransformStamped()
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = "head_camera_rgb_optical_frame"
+        t.child_frame_id = "suction_pose"
+        t.transform.translation.x = trans.x
+        t.transform.translation.y = trans.y
+        t.transform.translation.z = trans.z
+        t.transform.rotation = quat
+
+        self.tf_broadcaster.sendTransform(t)
+
         return response
 
 def main():
