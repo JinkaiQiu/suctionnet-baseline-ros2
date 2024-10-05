@@ -11,13 +11,35 @@ import sys
 from normal_std.inference import estimate_suction
 from .util import CameraInfo
 from .util import SuctionNetUtils as SNU
+from scipy.cluster.hierarchy import linkage, fcluster
 
 class NormStdInferencer:
     def __init__(self):
         # PrimeSense camera info
         self.camera_info = CameraInfo(640, 480, 525.8810348926615, 527.8853163315471, 321.0291284324178, 228.7422250324759, 1000)
     
-    def infer(self, rgb_img : np.ndarray, depth_img : np.ndarray, seg_mask=None):
+    # Cluster the suction directions and translations in case segmask covers multiple objects
+    def cluster_from_suction(self, suction_directions, suction_translations):
+        Z = linkage(suction_translations, 'ward')
+        distances = Z[:, 2]
+        diff = np.diff(distances)
+        max_gap_index = np.argmax(diff)
+        threshold = (distances[max_gap_index] + distances[max_gap_index + 1]) / 2
+        clusters = fcluster(Z, threshold, criterion='distance')
+        
+        clustered_suction_directions = []
+        clustered_suction_translations = []
+
+        for cluster_id in np.unique(clusters):
+            cluster_indices = np.where(clusters == cluster_id)[0]
+            cluster_directions = suction_directions[cluster_indices]
+            cluster_translations = suction_translations[cluster_indices]
+            clustered_suction_directions.append(cluster_directions)
+            clustered_suction_translations.append(cluster_translations)
+
+        return clustered_suction_directions, clustered_suction_translations
+
+    def infer(self, rgb_img : np.ndarray, depth_img : np.ndarray, seg_mask=None, use_cluster=False):
         assert rgb_img.shape[:2] == depth_img.shape[:2]
         assert rgb_img.shape[:2] == seg_mask.shape[:2]
         assert len(depth_img.shape) == 2
@@ -34,7 +56,7 @@ class NormStdInferencer:
         # print('heatmap:', heatmap.shape)
         heatmap = F.conv2d(heatmap, kernel).squeeze().numpy()
 
-        suction_scores, idx0, idx1 = SNU.grid_sample(heatmap, down_rate=10, topk=10)
+        suction_scores, idx0, idx1 = SNU.grid_sample(heatmap, down_rate=10, topk=20)
         
         if seg_mask is not None:
             suctions, idx0, idx1 = SNU.filter_suctions(suction_scores, idx0, idx1, seg_mask)
@@ -43,6 +65,17 @@ class NormStdInferencer:
         suction_translations = point_cloud[idx0, idx1, :]
         SNU.visualize_heatmap(heatmap, rgb_img, idx0, idx1)
         SNU.visualize_suctions(suction_directions, suction_translations)
+        
+        if use_cluster:
+            clu_suction_directions, clu_suction_translations = self.cluster_from_suction(suction_directions, suction_translations)
+            print('Num of clusters:', len(clu_suction_directions))
+
+            sampled_index = np.random.choice(range(len(clu_suction_directions)))
+
+            suction_directions = clu_suction_directions[sampled_index]
+            suction_translations = clu_suction_translations[sampled_index]
+            print('Sampled suction_directions:', suction_directions)
+            print('Sampled suction_translations:', suction_translations)
         
         # average suction direction and translation after filtering outliers
         suction_direction = np.mean(suction_directions, axis=0)
@@ -62,7 +95,7 @@ if __name__ == "__main__":
     seg_dir = "/home/jinkai/Downloads/data/seg_masks/first_scene.png"
     depth_dir = "/home/jinkai/Downloads/Test_Images/Depth/image_50.png"
     rgb_dir = "/home/jinkai/Downloads/Test_Images/RGB/image_50.png"
-    seg_dir = "/home/jinkai/Downloads/Test_Images/seg_mask/image_50.png"
+    seg_dir = "/home/jinkai/Downloads/Test_Images/seg_mask/image_50_2.png"
     rgb_img = cv2.imread(rgb_dir)
     depth_img = cv2.imread(depth_dir, cv2.IMREAD_GRAYSCALE).astype(np.float32)/100
     dummy_seg_mask = np.ones_like(depth_img, dtype=bool)
