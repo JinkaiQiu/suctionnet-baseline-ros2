@@ -3,7 +3,7 @@ import cv2
 import open3d as o3d
 import numpy as np
 import scipy.io as scio
-from policy import estimate_suction
+from .policy import estimate_suction
 
 
 class CameraInfo():

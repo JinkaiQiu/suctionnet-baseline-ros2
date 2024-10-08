@@ -8,7 +8,7 @@ import torch
 import torch.nn.functional as F
 from PIL import Image
 import scipy.io as scio
-from policy import estimate_suction
+from .policy import estimate_suction
 
 
 parser = argparse.ArgumentParser()
