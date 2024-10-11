@@ -140,8 +140,12 @@ class SuctionNetUtils():
     def unit_vect_to_quat(unit_vect):
         unit_vect = unit_vect / np.linalg.norm(unit_vect)
         ref_vect = np.array([0, 0, 1])
-        rot_axis = np.cross(ref_vect, unit_vect)
-        rot_angle = np.arccos(np.dot(ref_vect, unit_vect))
-        quat = R.from_rotvec(rot_angle * rot_axis).as_quat()
-            
-        return quat
+        cross = np.cross(unit_vect, ref_vect)
+        dot = np.dot(unit_vect, ref_vect)
+
+        w = dot + 1
+        x = cross[0]
+        y = cross[1]
+        z = cross[2]
+
+        return (x,y,z,w)
